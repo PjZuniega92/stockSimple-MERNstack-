@@ -1,0 +1,19 @@
+# Node modules 
+node_modules/
+npm-debug.log
+
+# Environment variables (Sensitive data)
+.env
+
+# Database files (If using local MongoDB)
+*.sqlite
+*.db
+
+# Build files (React)
+build/
+dist/
+
+# Logs & Temp files
+logs/
+*.log
+.DS_Store

@@ -1,0 +1,44 @@
+.card-fixed {
+    min-height: 300px; 
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .card-body-fixed {
+    flex-grow: 1;
+    overflow: hidden;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+  }
+  
+  .table-fixed {
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .table-fixed td,
+  .table-fixed th {
+    text-align: center;
+    white-space: nowrap;
+  }
+  
+  .empty-row {
+    height: 35px; 
+    background-color: #f8f9fa; 
+  }
+  
+  
+  @media (max-width: 768px) {
+    .card-fixed {
+      min-height: auto;
+    }
+    
+    .table-fixed th,
+    .table-fixed td {
+      font-size: 14px; 
+      padding: 5px;
+    }
+  }
+  
