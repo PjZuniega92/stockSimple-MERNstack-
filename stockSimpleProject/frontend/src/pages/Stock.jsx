@@ -19,13 +19,14 @@ const Stock = () => {
       const response = await fetch("http://localhost:3000/api/stocks");
       if (!response.ok) throw new Error("Failed to fetch stocks");
       const data = await response.json();
-      setStocks(data);
+      setStocks(Array.isArray(data) ? data : data.stocks || []);
     } catch (error) {
       console.error("Error fetching stocks:", error);
     } finally {
       setLoading(false);
     }
   };
+  
 
   const fetchProducts = async () => {
     try {
@@ -39,38 +40,82 @@ const Stock = () => {
   };
 
   const handleSave = async () => {
-    const method = editingItem ? "PUT" : "POST";
-    const url = editingItem
-      ? `http://localhost:3000/api/stocks/${editingItem._id}`
-      : "http://localhost:3000/api/stocks";
-
+    if (!newItem.productId || !newItem.quantityAdded || !newItem.location) {
+      console.error("Error: Missing required fields!");
+      return;
+    }
+  
     try {
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newItem),
-      });
-
-      if (!response.ok) throw new Error("Failed to save stock item");
-
-      await response.json();
-      fetchStocks();
+      if (editingItem) {
+        console.log("Updating stock with ID:", editingItem._id, "Data:", newItem);
+  
+        const response = await fetch(`http://localhost:3000/api/stocks/${editingItem._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newItem),
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to update stock.");
+        }
+  
+        const updatedStock = await response.json();
+        setStocks(stocks.map((item) => (item._id === editingItem._id ? updatedStock.stock : item)));
+  
+        console.log(`Stock ${editingItem._id} updated successfully`);
+      } else {
+        console.log("Adding new stock:", newItem);
+  
+        const response = await fetch("http://localhost:3000/api/stocks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newItem),
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to add stock.");
+        }
+  
+        const addedStock = await response.json();
+        setStocks([...stocks, addedStock]);
+  
+        console.log("Stock added successfully:", addedStock);
+      }
+  
       setShowModal(false);
       setEditingItem(null);
       setNewItem({ productId: "", quantityAdded: "", supplier: "", location: "" });
     } catch (error) {
-      console.error("Error saving stock item:", error);
+      console.error("Error saving stock item:", error.message);
     }
   };
+  
+  
 
   const handleDelete = async (id) => {
-    try {
-      await fetch(`http://localhost:3000/api/stocks/${id}`, { method: "DELETE" });
-      setStocks(stocks.filter((item) => item._id !== id));
-    } catch (error) {
-      console.error("Error deleting stock item:", error);
+    console.log("Deleting stock with ID:", id);
+
+    if (!id) {
+        console.error("Error: Stock ID is undefined!");
+        return;
     }
-  };
+
+    try {
+        const response = await fetch(`http://localhost:3000/api/stocks/${id}`, { method: "DELETE" });
+
+        if (!response.ok) {
+            const errorMessage = await response.json();
+            throw new Error(errorMessage.message || "Failed to delete stock.");
+        }
+
+        setStocks(stocks.filter((item) => item._id !== id));
+        console.log(`Stock ${id} deleted successfully`);
+    } catch (error) {
+        console.error("Error deleting stock item:", error.message);
+    }
+};
+
+  
 
   return (
     <Container className="mt-4">
@@ -99,17 +144,19 @@ const Stock = () => {
           </thead>
           <tbody>
             {stocks.map((item) => (
-              <tr key={item._id}>
-                <td>{item.productId?.name || "Unknown Product"}</td>
-                <td>{item.quantityAdded}</td>
+              <tr key={item._id || Math.random().toString(36)}>
+                <td>{item.productName || "Unknown Product"}</td>
+                <td>{parseFloat(item.quantityAdded) || 0}</td>
                 <td>{item.supplier || "N/A"}</td>
                 <td>{item.location}</td>
                 <td>
-                  {new Date(item.dateAdded).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {item.dateAdded
+                    ? new Date(item.dateAdded).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "No Date Available"}
                 </td>
                 <td>
                   <Button
@@ -118,7 +165,7 @@ const Stock = () => {
                     onClick={() => {
                       setEditingItem(item);
                       setNewItem({
-                        productId: item.productId._id,
+                        productId: item.productId?._id || item.productId,
                         quantityAdded: item.quantityAdded,
                         supplier: item.supplier,
                         location: item.location,
@@ -128,9 +175,13 @@ const Stock = () => {
                   >
                     Edit
                   </Button>
-                  <Button variant="danger" onClick={() => handleDelete(item._id)}>
-                    Delete
+                  <Button variant="danger" onClick={() => {
+                      console.log("Deleting stock:", item);  
+                      handleDelete(item._id);
+                  }}>
+                      Delete
                   </Button>
+
                 </td>
               </tr>
             ))}
@@ -150,23 +201,24 @@ const Stock = () => {
               <Form.Label>Product</Form.Label>
               <Form.Select
                 value={newItem.productId}
-                onChange={(e) => setNewItem({ ...newItem, productId: e.target.value })}
+                onChange={(e) => setNewItem({ ...newItem, productId: e.target.value })} 
                 required
               >
-                <option value="">Select a product</option>
-                {products.map((product) => (
-                  <option key={product._id} value={product._id}>
-                    {product.name}
-                  </option>
-                ))}
-              </Form.Select>
+              <option value="">Select a product</option>
+              {products.map((product) => (
+                <option key={product._id} value={product._id}>
+                  {product.name}
+                </option>
+              ))}
+            </Form.Select>
+
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Quantity Added</Form.Label>
               <Form.Control
                 type="number"
                 value={newItem.quantityAdded}
-                onChange={(e) => setNewItem({ ...newItem, quantityAdded: e.target.value })}
+                onChange={(e) => setNewItem({ ...newItem, quantityAdded: Number(e.target.value) })}
                 required
               />
             </Form.Group>

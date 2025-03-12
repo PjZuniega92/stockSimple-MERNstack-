@@ -16,7 +16,7 @@ const createStock = async (request, response) => {
 
         if (existingStock) {
             // Update the quantity instead of creating a new entry
-            existingStock.quantityAdded += quantityAdded;
+            existingStock.quantityAdded += Number(quantityAdded);
             await existingStock.save();
             return response.status(200).json({ message: "Stock updated successfully!", stock: existingStock });
         } 
@@ -38,20 +38,23 @@ const getAllStocks = async (request, response) => {
             .populate("productId", "name") 
             .select("quantityAdded supplier productId location dateAdded");
 
-        response.status(200).json({
-            stocks: stocks.map(stock => ({
-                name: stock.productId?.name || "Unknown Product",
-                totalQuantity: stock.quantityAdded,
-                supplier: stock.supplier || "Unknown Supplier",
-                location: stock.location || "Unknown Location",
-                dateAdded: stock.dateAdded || "No Date Available"
-            })),
-        });
+            response.status(200).json({
+                stocks: stocks.map(stock => ({
+                    _id: stock._id, 
+                    productId: stock.productId?._id || null, 
+                    productName: stock.productId?.name || "Unknown Product",
+                    quantityAdded: stock.quantityAdded,
+                    supplier: stock.supplier || "Unknown Supplier",
+                    location: stock.location || "Unknown Location",
+                    dateAdded: stock.dateAdded || "No Date Available"
+                })),
+            });            
     } catch (error) {
         console.error("Error fetching stocks:", error);
         response.status(400).json({ message: "Failed to fetch stocks", error: error.message });
     }
 };
+
 
 
 // GET: get a specific stock by ID
@@ -71,16 +74,26 @@ const getStockById = async (request, response) => {
 const deleteStockById = async (request, response) => {
     const { id } = request.params;
 
-    try {
-        const stock = await Stock.findByIdAndDelete({ _id: id });
+    console.log("Deleting stock with ID:", id); 
 
-        if (!stock) return response.status(404).json({ message: `Stock with Id: ${id} not found.` });
+    try {
+        const stock = await Stock.findByIdAndDelete(id);
+
+        if (!stock) {
+            console.log("Stock not found in DB");
+            return response.status(404).json({ message: `Stock with ID: ${id} not found.` });
+        }
+
+        console.log("Stock deleted successfully");
         response.status(200).json({ message: `Stock with ID: ${id} deleted successfully.` });
     } catch (error) {
+        console.error("Error deleting stock:", error.message);
         response.status(400).json({ error: error.message });
-
     }
-}
+};
+
+
+
 
 // UPDATE: update a specific stock by ID
 const updateStockById = async (request, response) => {

@@ -95,12 +95,12 @@ const Home = () => {
               <Card.Title>Total Stocks</Card.Title>
               <Card.Text>{stats.totalStocks}</Card.Text>
               {renderTableWithFixedRows(stats.stocks, [
-  { label: "Product Name", field: "name" },
-  { label: "Quantity", field: "totalQuantity" },
-  { label: "Supplier", field: "supplier" },
-  { label: "Location", field: "location" },
-  { label: "Date Added", field: "dateAdded" },
-])}
+              { label: "Product Name", field: "name" },
+              { label: "Quantity", field: "totalQuantity" },
+              { label: "Supplier", field: "supplier" },
+              { label: "Location", field: "location" },
+              { label: "Date Added", field: "dateAdded" },
+              ])}
 
             </Card.Body>
           </Card>
